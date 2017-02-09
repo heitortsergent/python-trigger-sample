@@ -4,7 +4,7 @@ Sample Python script for initiating test runs and checking for the results. Use 
 ## Usage
 
  - Install requirements (virtualenv recommended): `pip install -r requirements.txt`
- - Update `API_TOKEN` variable value in the script
+ - Set the environment variable `RUNSCOPE_ACCESS_TOKEN` in your CI provider
  - Run with a Trigger URL as the sole parameter: `python app.py https://api.runscope.com/radar/:uuid/trigger`
 
 ## Generating an API key
