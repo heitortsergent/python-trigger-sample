@@ -21,7 +21,7 @@ def main():
 
             for run in test_runs:
                 test_run_id = run.get("test_run_id")
-                if not test_run_id in results:
+                if test_run_id not in results:
                     result = _get_result(run)
                     if result.get("result") in ["pass", "fail"]:
                         results[test_run_id] = result
@@ -38,7 +38,7 @@ def main():
 
 def _get_result(test_run):
     # generate Personal Access Token at https://www.runscope.com/applications
-    if not "RUNSCOPE_ACCESS_TOKEN" in os.environ:
+    if "RUNSCOPE_ACCESS_TOKEN" not in os.environ:
         print("Please set the environment variable RUNSCOPE_ACCESS_TOKEN. You can get an access token by going to https://www.runscope.com/applications")
         exit(1)
 
