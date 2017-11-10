@@ -61,8 +61,17 @@ def _get_result(test_run):
 
     if result_resp.ok:
         return result_resp.json().get("data")
-
-    return None
+    else:
+        # States Title, recently experenced a false positive. This should provide some
+        # more information in the event of another failure
+        print(
+            "Result response not ok... Check Runscope for more information: "
+            "https://www.runscope.com/radar/{bucket_key}/{test_id}/history/{test_run_id}"
+            .format(**opts)
+        )
+        print("\n\nResponse: {}".format(result_resp.text))
+        # Currently unrecoverable, TODO: revisit if false positive presist 
+        exit(1)
 
 
 if __name__ == '__main__':
