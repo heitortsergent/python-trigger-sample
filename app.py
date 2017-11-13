@@ -16,18 +16,25 @@ def main():
         print("Started {} test runs.".format(len(test_runs)))
 
         results = {}
-        while len(list(results.keys())) < len(test_runs):
+        deadline = time.time() + 600
+        while len(list(results.keys())) < len(test_runs) and time.time() < deadline:
             time.sleep(1)
 
             for run in test_runs:
                 test_run_id = run.get("test_run_id")
                 if test_run_id not in results:
                     result = _get_result(run)
+                    if not result:
+                        continue
                     if result.get("result") in ["pass", "fail"]:
                         results[test_run_id] = result
 
         pass_count = sum([r.get("result") == "pass" for r in list(results.values())])
         fail_count = sum([r.get("result") == "fail" for r in list(results.values())])
+
+        if len(results) < len(test_runs):
+            print('Some test runs did not complete')
+            exit(1)
 
         if fail_count > 0:
             print("{} test runs passed. {} test runs failed.".format(pass_count, fail_count))
@@ -58,20 +65,22 @@ def _get_result(test_run):
         "User-Agent": "python-trigger-sample"
     }
     result_resp = requests.get(result_url, headers=headers)
-
+    if result_resp.status_code == 404:
+        print('Unable to find test run result at %s' % result_url)
+        return
     if result_resp.ok:
         return result_resp.json().get("data")
-    else:
-        # States Title, recently experenced a false positive. This should provide some
-        # more information in the event of another failure
-        print(
-            "Result response not ok... Check Runscope for more information: "
-            "https://www.runscope.com/radar/{bucket_key}/{test_id}/history/{test_run_id}"
-            .format(**opts)
-        )
-        print("\n\nResponse: {}".format(result_resp.text))
-        # Currently unrecoverable, TODO: revisit if false positive presist 
-        exit(1)
+
+    # States Title, recently experenced a false positive. This should provide some
+    # more information in the event of another failure
+    print(
+        "Result response not ok... Check Runscope for more information: "
+        "https://www.runscope.com/radar/{bucket_key}/{test_id}/history/{test_run_id}"
+        .format(**opts)
+    )
+    print("\n\nResponse: {}".format(result_resp.text))
+    # Currently unrecoverable, TODO: revisit if false positive presist
+    exit(1)
 
 
 if __name__ == '__main__':
