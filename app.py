@@ -4,6 +4,9 @@ import time
 import os
 
 
+_MAX_SECONDS_ALLOWED_FOR_TESTS = 600
+
+
 def main():
     trigger_url = sys.argv[1]
     trigger_resp = requests.get(trigger_url)
@@ -16,25 +19,33 @@ def main():
         print("Started {} test runs.".format(len(test_runs)))
 
         results = {}
-        deadline = time.time() + 600
-        while len(list(results.keys())) < len(test_runs) and time.time() < deadline:
+        deadline = time.time() + _MAX_SECONDS_ALLOWED_FOR_TESTS
+        while len(results) < len(test_runs):
+            if time.time() >= deadline:
+                print('Some test runs did not complete in the allowed window of %s seconds'
+                      % _MAX_SECONDS_ALLOWED_FOR_TESTS)
+                exit(1)
+
             time.sleep(1)
 
             for run in test_runs:
                 test_run_id = run.get("test_run_id")
                 if test_run_id not in results:
-                    result = _get_result(run)
-                    if not result:
+                    result_data = _get_result(run)
+                    if not result_data:
                         continue
-                    if result.get("result") in ["pass", "fail"]:
-                        results[test_run_id] = result
+                    result = result_data.get("result")
+                    if result in ["pass", "fail"]:
+                        results[test_run_id] = result_data
+                    elif result == "working":
+                        # Results aren't ready yet. Will retry the next
+                        # time through the loop.
+                        pass
+                    else:
+                        print("Got response with unknown result field. Full response was %s" % result_data)
 
         pass_count = sum([r.get("result") == "pass" for r in list(results.values())])
         fail_count = sum([r.get("result") == "fail" for r in list(results.values())])
-
-        if len(results) < len(test_runs):
-            print('Some test runs did not complete')
-            exit(1)
 
         if fail_count > 0:
             print("{} test runs passed. {} test runs failed.".format(pass_count, fail_count))
@@ -69,7 +80,10 @@ def _get_result(test_run):
         print('Unable to find test run result at %s' % result_url)
         return
     if result_resp.ok:
-        return result_resp.json().get("data")
+        data = result_resp.json().get("data")
+        if not data:
+            print("Response data was empty. Full response was %s" % result_resp.text)
+        return data
 
     # States Title, recently experenced a false positive. This should provide some
     # more information in the event of another failure
