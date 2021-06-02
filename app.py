@@ -4,7 +4,7 @@ import time
 import os
 
 
-_MAX_SECONDS_ALLOWED_FOR_TESTS = 600
+_MAX_SECONDS_ALLOWED_FOR_TESTS = 900
 
 
 def main():
